@@ -3,5 +3,6 @@ version: '3'
 services:
   app:
     image: simple-app
+    container_name:kai-app
     ports:
       - "3000:3000"
