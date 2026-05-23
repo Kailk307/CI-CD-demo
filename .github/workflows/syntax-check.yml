@@ -36,7 +36,7 @@ jobs:
             git pull origin main
             
             echo "Đang dọn dẹp và khởi động lại Docker..."
-            docker compose down
-            docker compose up -d
+            docker-compose down
+            docker-compose up -d
             
             echo "Hệ thống đã tự động deploy thành công hoàn toàn!"
