@@ -1,29 +1,42 @@
-name: Docker Compose Syntax Checker
+name: CI/CD Pipeline for Monitoring Stack
 
-# 1. Định nghĩa SỰ KIỆN: Kích hoạt pipeline này mỗi khi có người PUSH code lên nhánh 'main'
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
-# 2. Định nghĩa các HÀNH ĐỘNG (Jobs) sẽ chạy
 jobs:
-  validate-config:
-    # Mượn một máy ảo Ubuntu sạch của GitHub để chạy test
+  # Công đoạn 1: CI (Kiểm tra lỗi)
+  ci-test:
     runs-on: ubuntu-latest
-
     steps:
-      # Bước 1: Tải code từ Repo GitHub về máy ảo này
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Bước 2: Kiểm tra xem Docker và Docker Compose có sẵn trên máy ảo không
-      - name: Verify Docker Compose Installation
-        run: docker-compose --version
-
-      # Bước 3: Lệnh CHỐT HẠ - Kiểm tra cú pháp file docker-compose.yml
-      # Tham số --quiet giúp lệnh chỉ báo lỗi nếu có, không in ra cả file cấu hình dài dòng
       - name: Run Docker Compose Syntax Check
-        run: |
-          docker-compose config --quiet
+        run: docker compose config --quiet
+
+  # Công đoạn 2: CD (Tự động Deploy - Chỉ chạy nếu công đoạn CI ở trên báo Xanh)
+  cd-deploy:
+    runs-on: ubuntu-latest
+    needs: ci-test # Ép buộc phải qua được vòng gửi xe CI thì mới chạy vòng này
+    
+    steps:
+      - name: Deploy to Ubuntu Server via SSH
+        uses: appleboy/ssh-action@v1.0.3 # Một con Bot có sẵn trên GitHub chuyên đi SSH
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            # Các lệnh này sẽ chạy TRỰC TIẾP bên trong con Ubuntu của bạn:
+            cd ~/prometheus-grafana # Di chuyển vào đúng thư mục chứa lab của bạn (sửa lại đường dẫn nếu bạn đặt thư mục tên khác)
+            
+            echo "Đang kéo code mới nhất từ GitHub về Server..."
+            git pull origin main
+            
+            echo "Đang dọn dẹp và khởi động lại Docker..."
+            docker compose down
+            docker compose up -d
+            
+            echo "Hệ thống đã tự động deploy thành công hoàn toàn!"
