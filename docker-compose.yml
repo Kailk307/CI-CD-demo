@@ -45,7 +45,11 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana-prod
-    ports:
-      - "30000:3000" # Đổi cổng bên ngoài thành 30000 để tránh trùng với con app (3000)
+    # ports:
+    environment:
+      # Cấu hình "vũ khí bí mật" để Grafana hiểu nó đang chạy dưới path /monitor
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/monitor/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+        # - "30000:3000" # Đổi cổng bên ngoài thành 30000 để tránh trùng với con app (3000)
     depends_on:
       - prometheus
